@@ -8,6 +8,7 @@ var page = require('webpage').create(),
     scanDir = system.args[4],
     scrshot = system.args[5],    
     eLevel = system.args[6],
+    output = system.args[7],
     screenshot_url ;
 
 	if(userName !== "") {
@@ -223,9 +224,6 @@ var page = require('webpage').create(),
                                                 }    
                                 }   //End for loop
 
-                                msgJson['title'] = document.title;
-                                msgJson['address'] = document.location.href
-
                             })          //End HTMLCS.process
 
                             //console.log(msgJson);
@@ -241,8 +239,13 @@ var page = require('webpage').create(),
                 }
 
                 // console.log(JSON.stringify(results));
-                var htmlStr = outputToHtml(results);
-                console.log(htmlStr);
+                if (output === 'json') {
+                    console.log(JSON.stringify(results));
+                } else {
+                    var htmlStr = outputToHtml('html', results);
+                    console.log(htmlStr);
+                }
+                
                 phantom.exit();
             }, 200);
         }//end if

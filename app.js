@@ -24,6 +24,14 @@ var https_port = nconf.get('https_port') || 443;
 var ssl_path= 'cert/ssl.key';
 var cert_file = 'cert/abc.cer';
 
+// Add headers
+app.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+});
 
 app.set('views', __dirname + '/views');
 app.engine('html', cons.handlebars);
@@ -85,7 +93,7 @@ if (fs.existsSync(ssl_path)) {
         , msgNotice = req.body.msgNotice
     	, eLevel=[]
     	, engine = req.body.engine
-		, output ='string'
+			, output =req.body.output
 
 		if(typeof engine === 'undefined' || engine ==='') engine = 'htmlcs';
 		if(typeof output === 'undefined' || output ==='') output = 'string';
@@ -105,7 +113,6 @@ if (fs.existsSync(ssl_path)) {
 			if(typeof msgErr === 'undefined' &&  typeof msgWarn === 'undefined' && typeof msgNotice === 'undefined') eLevel.push(1);
 
 			if(typeof scrshot !== 'undefined' && scrshot === 'true')  fs.mkdirSync(dirName);		//Create SCREEN SHOT DIRECTORY
-
 			childArgs = ['--config=config/config.json', path.join(__dirname, 'src/PAET.js')
 							, req.body.textURL
 							, 'WCAG2AA'
@@ -113,6 +120,7 @@ if (fs.existsSync(ssl_path)) {
 							, dirName
 							, scrshot
 							, eLevel
+							, output
 						];
 		}
 		if(engine === 'axe'){
@@ -122,7 +130,9 @@ if (fs.existsSync(ssl_path)) {
 			childArgs = ['--config=config/config.json', path.join(__dirname, 'src/chrome_url.js'), 'url', req.body.textURL, output];
 		}	
 		childProcess.execFile(binPath, childArgs, function(err, stdout, stderr) {
-			res.json({ userName: userName, data: stdout });
+			stdout = stdout.replace('done','');
+			res.write(stdout);
+	    res.end();
 			log(stdout);
 		});
 	});

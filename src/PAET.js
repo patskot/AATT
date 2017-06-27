@@ -208,20 +208,24 @@ var page = require('webpage').create(),
 
                             HTMLCS.process(standard, document, function() {
                                 messages = HTMLCS.getMessages();
+                                var x = 0;
                                 for (var i = 0 ,l = messages.length ; i < l ; i++) {
+
                                     var msg = messages[i]
                                         , outerHTML;
 
-                                    if (msg.element.innerHTML.length > 50)  outerHTML = msg.element.outerHTML.replace(msg.element.innerHTML, msg.element.innerHTML.substr(0, 50) + '...');
-                                    else outerHTML = msg.element.outerHTML;
-                                    
-                                    msgJson[i] = {
-                                                      "type"    : msg.type
-                                                    , "element" : splitLine(outerHTML.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'), 30)
-                                                    , "msg"     : msg.msg
-                                                    , "code"    : msg.code
-                                                    , "rect"    : JSON.stringify( msg.element.getBoundingClientRect() )
-                                                }    
+                                    if(msg.type == 1){
+                                        if (msg.element.innerHTML.length > 50)  outerHTML = msg.element.outerHTML.replace(msg.element.innerHTML, msg.element.innerHTML.substr(0, 50) + '...');
+                                        else outerHTML = msg.element.outerHTML;
+                                        msgJson[x] = {
+                                              "type"    : msg.type
+                                            , "element" : splitLine(outerHTML.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'), 30)
+                                            , "msg"     : msg.msg
+                                            , "code"    : msg.code
+                                            , "rect"    : JSON.stringify( msg.element.getBoundingClientRect() )
+                                        }   
+                                        x++ 
+                                    }
                                 }   //End for loop
 
                             })          //End HTMLCS.process
@@ -238,7 +242,6 @@ var page = require('webpage').create(),
                     break;
                 }
 
-                // console.log(JSON.stringify(results));
                 if (output === 'json') {
                     console.log(JSON.stringify(results));
                 } else {

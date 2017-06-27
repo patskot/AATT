@@ -51,7 +51,6 @@ app.use('/screenshots', express.static(__dirname + '/screenshots'));
 app.use('/Auditor',express.static(path.join(__dirname, 'src/HTML_CodeSniffer/Auditor')));    
 app.use('/Images',express.static(path.join(__dirname, 'src/HTML_CodeSniffer/Auditor/Images')));
 
-
 if (fs.existsSync(ssl_path)) {
 		var hskey = fs.readFileSync(ssl_path);
 		var hscert = fs.readFileSync(cert_file) ; 	
@@ -68,20 +67,8 @@ if (fs.existsSync(ssl_path)) {
 		app.listen(http_port);					
 		log('Express started on port ', http_port);
 }
-
-	app.get('/', function(req, res) {
-		res.render('index.html',{data:''});
-	});
-
-	app.get('/help', function(req, res) {
-		res.render('help.html');
-	});
-
-	app.get('/getURL', function(req, res) {
-		res.render('index.html',{data:''});
-	});
-
-	app.post('/sniffURL', function(req, res) {
+	// /sniffURL', {'textURL': this.website.url, 'output': 'json','scrshot': false}
+	app.post('/sniffurl', function(req, res) {
  		var childArgs
  		, userName = ''
  		, d = new Date()
@@ -91,7 +78,7 @@ if (fs.existsSync(ssl_path)) {
         , msgErr = req.body.msgErr
         , msgWarn = req.body.msgWarn
         , msgNotice = req.body.msgNotice
-    	, eLevel=[]
+    	, eLevel=[1]
     	, engine = req.body.engine
 			, output =req.body.output
 
@@ -105,9 +92,9 @@ if (fs.existsSync(ssl_path)) {
 			log('Testing logged in session: -> ', userName)
 		}
     	if(engine === 'htmlcs'){
-	    	if(typeof msgErr !== 'undefined' && msgErr=='true') eLevel.push(1);
-	    	if(typeof msgWarn !== 'undefined' && msgWarn=='true') eLevel.push(2);
-	    	if(typeof msgNotice !== 'undefined' && msgNotice=='true') eLevel.push(3);
+	    	// if(typeof msgErr !== 'undefined' && msgErr=='true') eLevel.push(1);
+	    	// if(typeof msgWarn !== 'undefined' && msgWarn=='true') eLevel.push(2);
+	    	// if(typeof msgNotice !== 'undefined' && msgNotice=='true') eLevel.push(3);
 
 	    	//Default to Error
 			if(typeof msgErr === 'undefined' &&  typeof msgWarn === 'undefined' && typeof msgNotice === 'undefined') eLevel.push(1);
@@ -115,7 +102,7 @@ if (fs.existsSync(ssl_path)) {
 			if(typeof scrshot !== 'undefined' && scrshot === 'true')  fs.mkdirSync(dirName);		//Create SCREEN SHOT DIRECTORY
 			childArgs = ['--config=config/config.json', path.join(__dirname, 'src/PAET.js')
 							, req.body.textURL
-							, 'WCAG2AA'
+							, 'WCAG2A'
 							, userName
 							, dirName
 							, scrshot
@@ -134,104 +121,5 @@ if (fs.existsSync(ssl_path)) {
 			res.write(stdout);
 	    res.end();
 			log(stdout);
-		});
-	});
-
-	app.post('/sniffHTML', function(req, res) {
- 		var childArgs
- 		, userName = ''
- 		, d = new Date()
-		, engine = req.body.engine
-		, output ='string'
-
-		if(typeof engine === 'undefined' || engine ==='') engine = 'htmlcs';
-		if(typeof output === 'undefined' || output ==='') output = 'string';
-
-		var source = req.body.source;
-		source = source.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,'');	//replaces script tags
-
-		log('sniffHTML, E N G I N E ', engine);
-
-		var source = '<!DOCTYPE html><html lang="en"><meta charset="utf-8"><head><title>Home - PayPal Accessibility Tool</title></head><body>'
-					+ 	req.body.source
-					+ '</body></html>';
-
-    	if(engine === 'htmlcs'){
-			var childArgs = ['--config=config/config.json', path.join(__dirname, 'src/HTMLCS_Run.js'), req.body.source, 'WCAG2AA', '1,2,3', output];
-		}
-		if(engine === 'axe'){
-			var childArgs = ['--config=config/config.json', path.join(__dirname, 'src/axe.js'), 'source', req.body.source, output];
-		}	 	
-		if(engine === 'chrome'){
-			var childArgs = ['--config=config/config.json', path.join(__dirname, 'src/chrome.js'), 'source', req.body.source, output]			
-		}	 	
-	
-		childProcess.execFile(binPath, childArgs, function(err, stdout, stderr) {
-			res.json(stdout);
-			log(stdout);
-		});
-	});
-
-	app.post('/login', function(req, res) {
-		var userName= req.body.userName,
-			password =req.body.password,
-			stageName = req.body.stageName,
-			server = req.body.server
-
-			log(userName, password, stageName, server);
-			req.session.userName = userName;
-
-		var childArgs1 = ['--config=config/config.json', path.join(__dirname, 'src/login.js'), userName, password, stageName, server]
-			childProcess.execFile(binPath, childArgs1, function(err, stdout, stderr) {
-			res.json({ userName: userName, data: stdout });
-			log(stdout);
-		});
-	});
-
-	app.get('/logout', function(req, res) {
-		if (typeof req.session.userName !== 'undefined'){
-				var fs = require('fs');
-				fs.unlink(req.session.userName+'.txt', function (err) {
-					if (err) throw err;
-					log('successfully deleted cookies');
-				});
-				delete req.session.userName;
-			}
-			res.redirect('/');	
-	});
-
-	app.post('/evaluate', function(req, res) {
-		var engine	= req.body.engine;		//Eg htmlcs, chrome, axe 		default:htmlcs
-		var output = req.body.output;		// Eg. json, string  		default: string
-		var level = req.body.level;			//E.g. WCAG2AA, WCAG2A, WCAG2AAA, Section508 	default:WCAG2AA
-		var errLevel = req.body.errLevel;	// Eg. 1,2,3   1 means Error, 2 means Warning, 3 means Notice 	default:1,2,3
-
-		if(typeof engine === 'undefined' || engine ==='') engine = 'htmlcs';
-		if(typeof output === 'undefined' || output ==='') output = 'string';
-		if(typeof level === 'undefined' || level ==='') level = 'WCAG2AA';
-		if(typeof errLevel === 'undefined' || errLevel ==='') errLevel = '1';
-
-		var source = req.body.source;
-		source = source.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,'');	//replaces script tags
-
-		switch(engine){
-			case "chrome":
-				var childArgs = ['--config=config/config.json', path.join(__dirname, 'src/chrome.js'), 'source', source, output];
-				break;
-			case "htmlcs":
-				var childArgs = ['--config=config/config.json', path.join(__dirname, 'src/HTMLCS_Run.js'), source, level, errLevel, output];
-				break;				
-			case "axe":
-				var childArgs = ['--config=config/config.json', path.join(__dirname, 'src/axe.js'), 'source', source, output];
-				break;
-		}
-		console.log('E N G I N E ' , engine, childArgs);
-
-	 	childProcess.execFile(binPath, childArgs, function(err, stdout, stderr) {
-		 	stdout = stdout.replace('done','');
-	    	res.writeHead(200, { 'Content-Type': 'text/plain', "Access-Control-Allow-Origin":"*" });
-	    	res.write(stdout);
-	    	res.end();
-	    	log(stdout);
 		});
 	});
